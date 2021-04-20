@@ -46,8 +46,7 @@ off_wait(void)
 inline uint8_t
 read_rom(uint16_t addr)
 {
-    //uint16_t rom_addr = (addr - 0x4000) % 0x8000;
-    volatile uint16_t rom_addr = addr % 0x4000;
+    uint16_t rom_addr = (addr - 0x4000) % 0x8000;
     return magtree[rom_addr];
 }
 
@@ -59,7 +58,8 @@ isr_rd_fall(void)
 
 
     // read address
-    prepare_read_8bit_bus();
+    set_input_pinmode_8bit_bus();
+
     digitalWriteFast(ADDR_HIGH_OE, LOW);
     delayNanoseconds(10);
     addr = read_8bit_bus();
@@ -70,17 +70,27 @@ isr_rd_fall(void)
     digitalWriteFast(ADDR_LOW_OE, HIGH);
     delayNanoseconds(10);
 
-    // If SLTSL is active, fetch the data and send it to cpu
-    if (digitalReadFast(ZSLTSL) == HIGH)
-        return;
-    on_wait();
-    prepare_write_8bit_bus();
-    digitalWriteFast(DATA_DIR, HIGH);
-    digitalWriteFast(DATA_OE, LOW);
-    delayNanoseconds(10);
-    data = read_rom(addr);
-    write_8bit_bus(data);
-    off_wait();
+    if (digitalReadFast(ZMREQ) == LOW) {
+        // If SLTSL is not active, don't carry out memory read
+        if (
+          digitalReadFast(ZSLTSL) == HIGH ||
+          addr < 0x4000 ||
+          addr >= 0x8000
+        )
+            return;
+
+        on_wait();
+        set_output_pinmode_8bit_bus();
+
+        digitalWriteFast(DATA_DIR, HIGH);
+        digitalWriteFast(DATA_OE, LOW);
+        delayNanoseconds(10);
+        data = read_rom(addr);
+
+        off_wait();
+
+        write_8bit_bus(data);
+    }
 }
 
 //void
@@ -108,7 +118,6 @@ isr_rd_rise(void)
 
 void setup()
 {
-    ARM_DEMCR    |= ARM_DEMCR_TRCENA;         // enable debug/trace
     ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;   // enable cycle counter
 
     init_gpio();

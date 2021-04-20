@@ -48,6 +48,7 @@ init_gpio(void)
     pinMode(DATA_DIR, OUTPUT);
     digitalWriteFast(ADDR_HIGH_OE, HIGH);
     digitalWriteFast(ADDR_LOW_OE, HIGH);
+    digitalWriteFast(DATA_DIR, LOW);
     digitalWriteFast(DATA_OE, HIGH);
 
     pinMode(ZRD, INPUT_PULLUP);
@@ -60,7 +61,7 @@ init_gpio(void)
 }
 
 inline void
-prepare_read_8bit_bus(void)
+set_input_pinmode_8bit_bus(void)
 {
     pinMode(ZBIT0, INPUT_PULLUP);
     pinMode(ZBIT1, INPUT_PULLUP);
@@ -77,12 +78,12 @@ read_8bit_bus(void)
 {
     register uint8_t result;
 
-    result = (GPIO6_DR & (0xff << CORE_PIN19_BIT)) >> CORE_PIN19_BIT;
+    result = (GPIO6_DR >> CORE_PIN19_BIT) & 0xff;
     return result;
 }
 
 inline void
-prepare_write_8bit_bus(void)
+set_output_pinmode_8bit_bus(void)
 {
     pinMode(ZBIT0, OUTPUT);
     pinMode(ZBIT1, OUTPUT);

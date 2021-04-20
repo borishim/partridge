@@ -80,8 +80,8 @@ extern "C" {
 
 void    init_gpio(void);
 void    init_8bit_bus(void);
-void    prepare_read_8bit_bus(void);
-void    prepare_write_8bit_bus(void);
+void    set_input_pinmode_8bit_bus(void);
+void    set_output_pinmode_8bit_bus(void);
 uint8_t read_8bit_bus(void);
 void    write_8bit_bus(uint8_t data);
 
