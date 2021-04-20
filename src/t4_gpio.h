@@ -67,6 +67,8 @@ extern "C" {
 #define ZBUSDIR          21
 #define ZWAIT            22
 #define ZINT             20
+#define ZM1              24
+#define ZMREQ            25
 
 #define PSG_BC1     8
 #define PSG_BDIR    30
@@ -76,6 +78,7 @@ extern "C" {
 
 #define MQSL        12
 
+void    init_gpio(void);
 void    init_8bit_bus(void);
 void    prepare_read_8bit_bus(void);
 void    prepare_write_8bit_bus(void);

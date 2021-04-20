@@ -35,31 +35,28 @@
 inline void
 init_gpio(void)
 {
-    pinMode(DATA_OE, OUTPUT);
-    pinMode(DATA_DIR, OUTPUT);
-    pinMode(ADDR_HIGH_OE, OUTPUT);
-    pinMode(ADDR_LOW_OE, OUTPUT);
     pinMode(ZWAIT, OUTPUT);
     pinMode(ZINT, OUTPUT);
     pinMode(ZBUSDIR, OUTPUT);
-
-    pinMode(ZRD, INPUT_PULLUP);
-    pinMode(ZWR, INPUT_PULLUP);
-    pinMode(ZIORQ, INPUT_PULLUP);
-    pinMode(ZSLTSL, INPUT_PULLUP);
-    pinMode(ZRESET, INPUT_PULLUP);
-
     digitalWriteFast(ZWAIT, HIGH);
     digitalWriteFast(ZINT, HIGH);
     digitalWriteFast(ZBUSDIR, HIGH);
-}
 
-inline void
-insulate_8bit_bus(void)
-{
-    digitalWriteFast(DATA_OE, HIGH);
+    pinMode(ADDR_HIGH_OE, OUTPUT);
+    pinMode(ADDR_LOW_OE, OUTPUT);
+    pinMode(DATA_OE, OUTPUT);
+    pinMode(DATA_DIR, OUTPUT);
     digitalWriteFast(ADDR_HIGH_OE, HIGH);
     digitalWriteFast(ADDR_LOW_OE, HIGH);
+    digitalWriteFast(DATA_OE, HIGH);
+
+    pinMode(ZRD, INPUT_PULLUP);
+    pinMode(ZWR, INPUT_PULLUP);
+    pinMode(ZM1, INPUT_PULLUP);
+    pinMode(ZMREQ, INPUT_PULLUP);
+    pinMode(ZIORQ, INPUT_PULLUP);
+    pinMode(ZSLTSL, INPUT_PULLUP);
+    pinMode(ZRESET, INPUT_PULLUP);
 }
 
 inline void

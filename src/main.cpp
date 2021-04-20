@@ -29,8 +29,7 @@
 #include <Arduino.h>
 
 #include "t4_gpio.h"
-
-uint16_t addr;
+#include "magtree.h"
 
 inline void
 on_wait(void)
@@ -44,87 +43,81 @@ off_wait(void)
     digitalWriteFast(ZWAIT, HIGH);
 }
 
-inline uint16_t
-pull_addr_from_cpu(void)
-{
-    uint16_t addr_high;
-    uint16_t addr_low;
-
-    digitalWriteFast(ADDR_HIGH_OE, LOW);
-    prepare_read_8bit_bus();
-    addr_high = read_8bit_bus();
-    digitalWriteFast(ADDR_HIGH_OE, HIGH);
-    digitalWriteFast(ADDR_LOW_OE, LOW);
-    addr_low = read_8bit_bus();
-    digitalWriteFast(ADDR_LOW_OE, HIGH);
-
-    return (addr_high << 8) | addr_low;
-}
-
-inline void
-push_data_to_cpu(uint8_t data)
-{
-    digitalWriteFast(DATA_OE, LOW);
-    digitalWriteFast(DATA_DIR, LOW);
-    prepare_write_8bit_bus();
-    write_8bit_bus(data);
-}
-
 inline uint8_t
-pull_data_from_cpu()
+read_rom(uint16_t addr)
 {
-    uint8_t data;
-
-    digitalWriteFast(DATA_OE, LOW);
-    digitalWriteFast(DATA_DIR, HIGH);
-    prepare_read_8bit_bus();
-    data = read_8bit_bus();
-    digitalWriteFast(DATA_OE, HIGH);
-    return;
-}
-
-void
-isr_sltsl_fall(void)
-{
-    addr = pull_addr_from_cpu();
+    //uint16_t rom_addr = (addr - 0x4000) % 0x8000;
+    volatile uint16_t rom_addr = addr % 0x4000;
+    return magtree[rom_addr];
 }
 
 void
 isr_rd_fall(void)
 {
-    uint8_t data;
+    volatile uint16_t addr;
+    volatile uint8_t data;
 
+
+    // read address
+    prepare_read_8bit_bus();
+    digitalWriteFast(ADDR_HIGH_OE, LOW);
+    delayNanoseconds(10);
+    addr = read_8bit_bus();
+    digitalWriteFast(ADDR_HIGH_OE, HIGH);
+    digitalWriteFast(ADDR_LOW_OE, LOW);
+    delayNanoseconds(10);
+    addr = (addr << 8) | read_8bit_bus();
+    digitalWriteFast(ADDR_LOW_OE, HIGH);
+    delayNanoseconds(10);
+
+    // If SLTSL is active, fetch the data and send it to cpu
+    if (digitalReadFast(ZSLTSL) == HIGH)
+        return;
     on_wait();
-    //data = read_mem(addr);
-    push_data_to_cpu(data);
+    prepare_write_8bit_bus();
+    digitalWriteFast(DATA_DIR, HIGH);
+    digitalWriteFast(DATA_OE, LOW);
+    delayNanoseconds(10);
+    data = read_rom(addr);
+    write_8bit_bus(data);
     off_wait();
 }
 
-void
-isr_wr_fall(void)
-{
-    uint8_t data;
+//void
+//isr_wr_fall(void)
+//{
+//    volatile uint8_t data;
+//
+//    prepare_read_8bit_bus();
+//    digitalWriteFast(DATA_DIR, LOW);
+//    digitalWriteFast(DATA_OE, LOW);
+//    delayNanoseconds(10);
+//    data = read_8bit_bus();
+//    on_wait();
+//    write_mem(addr, data);
+//    off_wait();
+//    digitalWriteFast(DATA_OE, HIGH);
+//}
 
-    data = pull_data_from_cpu();
-    on_wait();
-    //write_mem(addr, data);
-    off_wait();
-}
-
 void
-isr_wr_rise(void)
+isr_rd_rise(void)
 {
     digitalWriteFast(DATA_OE, HIGH);
+    delayNanoseconds(10);
 }
 
-void setup() {
-  // put your setup code here, to run once:
-    attachInterrupt(ZSLTSL, isr_sltsl_fall, FALLING);
+void setup()
+{
+    ARM_DEMCR    |= ARM_DEMCR_TRCENA;         // enable debug/trace
+    ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;   // enable cycle counter
+
+    init_gpio();
+    //attachInterrupt(ZMREQ, isr_mreq_fall, FALLING);
     attachInterrupt(ZRD, isr_rd_fall, FALLING);
-    attachInterrupt(ZWR, isr_wr_fall, FALLING);
-    attachInterrupt(ZWR, isr_wr_rise, RISING);
+    attachInterrupt(ZRD, isr_rd_rise, RISING);
+    //attachInterrupt(ZWR, isr_wr_fall, FALLING);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+    // put your main code here, to run repeatedly:
 }
